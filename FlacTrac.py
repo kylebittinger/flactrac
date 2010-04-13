@@ -23,7 +23,7 @@ def replace_ext(filename, new_ext):
 class Converter(object):
     def __init__(self, export_dir, bitrate, use_fixed_bitrate):
         self.export_dir = export_dir
-        self.bitrate = bitrate or self.default_bitrate
+        self.bitrate = bitrate
         self.use_fixed_bitrate = use_fixed_bitrate
 
     def convert_directory(self, input_dir):
@@ -95,7 +95,6 @@ class Converter(object):
 
 class AacConverter(Converter):
     output_ext = '.m4a'
-    default_bitrate = 160
 
     def set_converted_tags(self, converted_fp, tags):
         tags = copy.deepcopy(tags)
@@ -130,7 +129,7 @@ class AacConverter(Converter):
         # Nero encoder uses bit/s instead of kbit/s
         nero_bitrate = str(self.bitrate * 1000)
         args = [
-            'neroAacEnc', # '-2pass', 
+            'neroAacEnc', '-2pass', 
             '-if', wav_filepath, '-of', converted_filepath, 
             '-br', nero_bitrate
             ]
@@ -139,7 +138,6 @@ class AacConverter(Converter):
 
 class Mp3Converter(Converter):
     output_ext = '.mp3'
-    default_bitrate = 190
 
     def format_tracknumber_str(self, tags):
         n = tags['tracknumber']
@@ -219,8 +217,8 @@ class FlacTracApp(object):
             help='output file format. Choices: ' + \
                 ', '.join(self.converter_classes.keys()) + \
                 '. [default: %default]')
-        p.add_option('-b', '--bitrate', type='int',
-            help='bitrate of output files [default: 160 for aac, 192 for mp3]')
+        p.add_option('-b', '--bitrate', type='int', default=192,
+            help='bitrate of output files [default: 192 kbps]')
         p.add_option('--use_fixed_bitrate', action='store_true', default=False,
             help='use fixed bitrate encoding [default: %default]')
         p.add_option('-o', '--output_dir', default='/home/kyle/Desktop/Export',
