@@ -171,7 +171,7 @@ class Mp3Converter(Converter):
 
     def convert_wav(self, wav_filepath, converted_filepath):
         if self.use_fixed_bitrate:
-            bitrate_args = ['-B', str(self.bitrate)]
+            bitrate_args = ['-b', str(self.bitrate)]
         else:
             bitrate_args = ['-V', self.vbr_quality]
         args = ['lame', '--add-id3v2'] + bitrate_args + \
