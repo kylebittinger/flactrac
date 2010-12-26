@@ -200,7 +200,8 @@ class FlacTracApp(object):
 
     def __init__(self, args=None):
         parser = self._build_parser()
-        opts, self.flac_dirs = parser.parse_args(args)
+        opts, args = parser.parse_args(args)
+        self.flac_dirs = [os.path.realpath(d) for d in args]
         maybe_mkdir(opts.output_dir)
         try:
             converter_class = self.converter_classes[opts.format]
