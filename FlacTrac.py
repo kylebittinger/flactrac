@@ -62,9 +62,7 @@ class Converter(object):
         wav_filepath = os.path.join(output_dir, wav_filename)
 
         args = ['flac', '-d', flac_filepath, '-o', wav_filepath]
-        retcode = subprocess.call(args)
-        if retcode != 0:
-            raise ApplicationError('Nonzero return code from process %s' % args)
+        subprocess.check_call(args)
         return wav_filepath
 
     def init_output_dir(self, input_dir):
