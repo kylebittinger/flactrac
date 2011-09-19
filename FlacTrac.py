@@ -212,7 +212,7 @@ class FlacTracApp(object):
 
     def _build_parser(self):
         p = optparse.OptionParser(usage='%prog [options] flac_dir')
-        p.add_option('-f', '--format', default='aac',
+        p.add_option('-f', '--format', default='mp3',
             help='output file format. Choices: ' + \
                 ', '.join(self.converter_classes.keys()) + \
                 '. [default: %default]')
