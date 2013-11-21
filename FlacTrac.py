@@ -180,16 +180,21 @@ class Mp3Converter(Converter):
         return True
 
     def _get_vbr_quality(self):
-        if self.bitrate < 145:
+        # Thresholds are at average of max bitrate for lower quality
+        # setting and min bitrate for higher quality setting.  See
+        # http://wiki.hydrogenaudio.org/index.php?title=LAME
+        if self.bitrate < 145: # max_5 = 150, min_4 = 140
             return '5'
-        elif self.bitrate < 170:
+        elif self.bitrate < 167.5: # max_4 = 185, min_3 = 150
             return '4'
-        elif self.bitrate < 183:
+        elif self.bitrate < 182.5: # max_3 = 195, min_2 = 170
             return '3'
-        elif self.bitrate < 208:
+        elif self.bitrate < 200: # max_2 = 210, min_1 = 190
             return '2'
-        else:
+        elif self.bitrate < 235: # max_1 = 250, min_0 = 220
             return '1'
+        else:
+            return '0'
     vbr_quality = property(_get_vbr_quality)
 
 class FlacTracApp(object):
