@@ -14,7 +14,7 @@ def maybe_mkdir(dir_path):
         os.mkdir(dir_path)
 
 def is_flac(filename):
-    return fnmatch.fnmatch(filename, '*.flac')
+    return filename.endswith('.flac') or filename.endswith('.Flac')
 
 def replace_ext(filename, new_ext):
     basename, _ = os.path.splitext(filename)
