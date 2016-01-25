@@ -7,14 +7,17 @@ import optparse
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 
 def maybe_mkdir(dir_path):
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
 
-def is_flac(filename):
-    return filename.endswith('.flac') or filename.endswith('.Flac')
+def match_ext(filename, ext):
+    _, observed_ext = os.path.splitext(filename)
+    lowercase_ext = observed_ext.lower()
+    return lowercase_ext == ext
 
 def replace_ext(filename, new_ext):
     basename, _ = os.path.splitext(filename)
@@ -28,14 +31,27 @@ class Converter(object):
 
     def convert_directory(self, input_dir):
         output_dir = self.init_output_dir(input_dir)
-        temp_dir = tempfile.mkdtemp()
-        for flac_fp in self.get_flac_filepaths(input_dir):
-            wav_fp = self.flac_to_wav(flac_fp, temp_dir)
-            converted_fp = self.get_converted_fp(wav_fp, output_dir)
-            self.convert_wav(wav_fp, converted_fp)
-            tags = self.get_flac_tags(flac_fp)
-            self.set_converted_tags(converted_fp, tags)
-        shutil.rmtree(temp_dir)
+        flac_fps = self.get_track_filepaths(input_dir, ".flac")
+        if flac_fps:
+            sys.stderr.write("Converting FLAC files in %s\n" % input_dir)
+            temp_dir = tempfile.mkdtemp()
+            for flac_fp in flac_fps:
+                wav_fp = self.flac_to_wav(flac_fp, temp_dir)
+                converted_fp = self.get_converted_fp(wav_fp, output_dir)
+                self.convert_wav(wav_fp, converted_fp)
+                tags = self.get_flac_tags(flac_fp)
+                self.set_converted_tags(converted_fp, tags)
+            shutil.rmtree(temp_dir)
+            return None
+        else:
+            wav_fps = self.get_track_filepaths(input_dir, ".wav")
+            if wav_fps:
+                sys.stderr.write("Converting WAV files in %s\n" % input_dir)
+                for wav_fp in wav_fps:
+                    converted_fp = self.get_converted_fp(wav_fp, output_dir)
+                    self.convert_wav(wav_fp, converted_fp)
+                return None
+        sys.stderr.write("No FLAC or WAV files found in %s\n" % input_dir)
 
     def get_flac_tags(self, flac_fp):
         f = mutagen.flac.FLAC(flac_fp)
@@ -46,16 +62,14 @@ class Converter(object):
             tags[key] = val
         return tags
 
-    def get_flac_filepaths(self, input_dir):
-        flac_filepaths = []
-        for subdir, dirnames, filenames in os.walk(input_dir):
-            # Only search top-level directory
-            del dirnames[:]
-            flac_filepaths.extend([
-                    os.path.join(input_dir, subdir, fn) for fn in 
-                    filter(is_flac, filenames)])
-        flac_filepaths.sort()
-        return flac_filepaths
+    def get_track_filepaths(self, input_dir, ext="flac"):
+        track_filepaths = []
+        for fname in os.listdir(input_dir):
+            fpath = os.path.join(input_dir, fname)
+            if os.path.isfile(fpath) and match_ext(fname, ext):
+                track_filepaths.append(fpath)
+        track_filepaths.sort()
+        return track_filepaths
 
     def flac_to_wav(self, flac_filepath, output_dir):
         wav_filename = replace_ext(os.path.basename(flac_filepath), '.wav')
