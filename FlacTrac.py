@@ -131,7 +131,9 @@ class AacConverter(Converter):
             ]
         for tagname in tags.keys():
             if tagname not in nero_standard_tags:
-                print "Tag %s not in standard fields, skipping." % tagname
+                sys.stderr.write(
+                    "Tag {0} not in standard fields, skipping.\n".format(tagname)
+                )
                 del tags[tagname]
         nero_opts = ['-meta:%s=%s' % x for x in tags.items()]
         nero_args = ['neroAacTag', converted_fp] + nero_opts
