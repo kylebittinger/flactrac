@@ -105,49 +105,6 @@ class Converter(object):
         return os.path.join(output_dir, converted_filename)
 
 
-class AacConverter(Converter):
-    output_ext = '.m4a'
-
-    def set_converted_tags(self, converted_fp, tags):
-        tags = copy.deepcopy(tags)
-        # Change tag names to match nero options
-        nero_tagnames = {
-            'tracknumber': 'track', 
-            'tracktotal': 'totaltracks',
-            'discnumber': 'disc', 
-            'disctotal': 'totaldiscs',
-            'date': 'year',
-            }
-        for flac_tagname, nero_tagname in nero_tagnames.items():
-            if flac_tagname in tags:
-                val = tags[flac_tagname]
-                del tags[flac_tagname]
-                tags[nero_tagname] = val
-        # Filter, keeping only standard tags
-        nero_standard_tags = [
-            'title', 'artist', 'year', 'album', 'genre', 'track', 'totaltracks', 
-            'disc', 'totaldiscs', 'url', 'copyright', 'comment', 'lyrics', 
-            'credits', 'rating', 'label', 'composer', 'isrc', 'mood', 'tempo',
-            ]
-        for tagname in tags.keys():
-            if tagname not in nero_standard_tags:
-                print "Tag %s not in standard fields, skipping." % tagname
-                del tags[tagname]
-        nero_opts = ['-meta:%s=%s' % x for x in tags.items()]
-        nero_args = ['neroAacTag', converted_fp] + nero_opts
-        subprocess.check_call(nero_args)
-
-    def convert_wav(self, wav_filepath, converted_filepath):
-        # Nero encoder uses bit/s instead of kbit/s
-        nero_bitrate = str(self.bitrate * 1000)
-        args = [
-            'neroAacEnc', '-2pass', 
-            '-if', wav_filepath, '-of', converted_filepath, 
-            '-br', nero_bitrate
-            ]
-        subprocess.check_call(args)
-
-
 class Mp3Converter(Converter):
     output_ext = '.mp3'
 
@@ -213,7 +170,6 @@ class Mp3Converter(Converter):
 
 class FlacTracApp(object):
     converter_classes = {
-        'aac': AacConverter,
         'mp3': Mp3Converter,
         }
 
@@ -221,13 +177,14 @@ class FlacTracApp(object):
         parser = self._build_parser()
         opts, args = parser.parse_args(args)
         self.flac_dirs = [os.path.realpath(d) for d in args]
-        maybe_mkdir(opts.output_dir)
+        output_dir = os.path.expanduser(opts.output_dir)
+        maybe_mkdir(output_dir)
         try:
             converter_class = self.converter_classes[opts.format]
         except KeyError:
             parser.error('Unknown output format: %s' % opts.format)
         self.converter = converter_class(
-            opts.output_dir, opts.bitrate, opts.use_fixed_bitrate)
+            output_dir, opts.bitrate, opts.use_fixed_bitrate)
 
     def _build_parser(self):
         p = optparse.OptionParser(usage='%prog [options] flac_dir')
@@ -235,11 +192,11 @@ class FlacTracApp(object):
             help='output file format. Choices: ' + \
                 ', '.join(self.converter_classes.keys()) + \
                 '. [default: %default]')
-        p.add_option('-b', '--bitrate', type='int', default=192,
-            help='bitrate of output files [default: 192 kbps]')
+        p.add_option('-b', '--bitrate', type='int', default=320,
+            help='bitrate of output files [default: 320 kbps]')
         p.add_option('--use_fixed_bitrate', action='store_true', default=False,
             help='use fixed bitrate encoding [default: %default]')
-        p.add_option('-o', '--output_dir', default='/home/kyle/Desktop/Export',
+        p.add_option('-o', '--output_dir', default='~/Desktop/Export',
             help='output directory [default: %default]')
         return p
 
