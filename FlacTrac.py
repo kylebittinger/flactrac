@@ -24,10 +24,9 @@ def replace_ext(filename, new_ext):
     return basename + new_ext
 
 class Converter(object):
-    def __init__(self, export_dir, bitrate, use_fixed_bitrate):
+    def __init__(self, export_dir, bitrate):
         self.export_dir = export_dir
         self.bitrate = bitrate
-        self.use_fixed_bitrate = use_fixed_bitrate
 
     def convert_directory(self, input_dir):
         output_dir = self.init_output_dir(input_dir)
@@ -141,32 +140,15 @@ class Mp3Converter(Converter):
         f.save()
 
     def convert_wav(self, wav_filepath, converted_filepath):
-        if self.use_fixed_bitrate:
-            bitrate_args = ['-b', str(self.bitrate)]
+        if self.bitrate.startswith("v") or self.bitrate.startswith("V"):
+            variable_bitrate_num = self.bitrate[1:]
+            bitrate_args = ['-V', variable_bitrate_num]
         else:
-            bitrate_args = ['-V', self.vbr_quality]
+            bitrate_args = ['-b', self.bitrate]
         args = ['lame', '--add-id3v2'] + bitrate_args + \
             [wav_filepath, converted_filepath]
         retcode = subprocess.check_call(args)
         return True
-
-    def _get_vbr_quality(self):
-        # Thresholds are at average of max bitrate for lower quality
-        # setting and min bitrate for higher quality setting.  See
-        # http://wiki.hydrogenaudio.org/index.php?title=LAME
-        if self.bitrate < 145: # max_5 = 150, min_4 = 140
-            return '5'
-        elif self.bitrate < 167.5: # max_4 = 185, min_3 = 150
-            return '4'
-        elif self.bitrate < 182.5: # max_3 = 195, min_2 = 170
-            return '3'
-        elif self.bitrate < 200: # max_2 = 210, min_1 = 190
-            return '2'
-        elif self.bitrate < 235: # max_1 = 250, min_0 = 220
-            return '1'
-        else:
-            return '0'
-    vbr_quality = property(_get_vbr_quality)
 
 class FlacTracApp(object):
     converter_classes = {
@@ -184,7 +166,7 @@ class FlacTracApp(object):
         except KeyError:
             parser.error('Unknown output format: %s' % opts.format)
         self.converter = converter_class(
-            output_dir, opts.bitrate, opts.use_fixed_bitrate)
+            output_dir, opts.bitrate)
 
     def _build_parser(self):
         p = optparse.OptionParser(usage='%prog [options] flac_dir')
@@ -192,10 +174,8 @@ class FlacTracApp(object):
             help='output file format. Choices: ' + \
                 ', '.join(self.converter_classes.keys()) + \
                 '. [default: %default]')
-        p.add_option('-b', '--bitrate', type='int', default=320,
+        p.add_option('-b', '--bitrate', default="320",
             help='bitrate of output files [default: 320 kbps]')
-        p.add_option('--use_fixed_bitrate', action='store_true', default=False,
-            help='use fixed bitrate encoding [default: %default]')
         p.add_option('-o', '--output_dir', default='~/Desktop/Export',
             help='output directory [default: %default]')
         return p
