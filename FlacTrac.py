@@ -81,22 +81,13 @@ class Converter(object):
     def init_output_dir(self, input_dir):
         """Initialize subdirectory structure in output_dir
         
-        Assumes that input directory has structure
-        /music/folder/Artist/Album
-        and creates the Artist/Album folders in output_dir.
+        Creates a new directory in output_dir with the same name as
+        the input directory.
         """
-        input_dir = os.path.realpath(input_dir)
-        parent_dir, album_dirname = os.path.split(input_dir)
-        _, artist_dirname = os.path.split(parent_dir)
-
-        output_artist_dir = os.path.join(
-            self.export_dir, artist_dirname)
-        maybe_mkdir(output_artist_dir)
-        
-        output_album_dir = os.path.join(
-            output_artist_dir, album_dirname)
-        maybe_mkdir(output_album_dir)
-        return output_album_dir
+        input_dirname = os.path.basename(input_dir)
+        output_dir = os.path.join(self.export_dir, input_dirname)
+        maybe_mkdir(output_dir)
+        return output_dir
 
     def get_converted_fp(self, wav_filepath, output_dir):
         converted_filename = replace_ext(
@@ -159,14 +150,13 @@ class FlacTracApp(object):
         parser = self._build_parser()
         opts, args = parser.parse_args(args)
         self.flac_dirs = [os.path.realpath(d) for d in args]
-        output_dir = os.path.expanduser(opts.output_dir)
-        maybe_mkdir(output_dir)
+        export_dir = os.path.expanduser(opts.export_dir)
+        maybe_mkdir(export_dir)
         try:
             converter_class = self.converter_classes[opts.format]
         except KeyError:
             parser.error('Unknown output format: %s' % opts.format)
-        self.converter = converter_class(
-            output_dir, opts.bitrate)
+        self.converter = converter_class(export_dir, opts.bitrate)
 
     def _build_parser(self):
         p = optparse.OptionParser(usage='%prog [options] flac_dir')
@@ -176,8 +166,8 @@ class FlacTracApp(object):
                 '. [default: %default]')
         p.add_option('-b', '--bitrate', default="320",
             help='bitrate of output files [default: 320 kbps]')
-        p.add_option('-o', '--output_dir', default='~/Desktop/Export',
-            help='output directory [default: %default]')
+        p.add_option('-o', '--export_dir', default='~/Desktop/Export',
+            help='export directory [default: %default]')
         return p
 
     def run(self):
