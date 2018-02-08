@@ -174,5 +174,5 @@ class FlacTracApp(object):
         for flac_dir in self.flac_dirs:
             self.converter.convert_directory(flac_dir)
 
-if __name__ == '__main__':
-    FlacTracApp().run()
+def main(argv=None):
+    FlacTracApp(argv).run()
